@@ -1,0 +1,1 @@
+-- These are the SQL codes that I did for my final exam in Eskwelabs. The dataset that has been used is a public dateset from Department of Health (COVID-19 cases) here in the Philippines --
