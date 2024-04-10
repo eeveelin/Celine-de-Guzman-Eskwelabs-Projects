@@ -1,0 +1,144 @@
+-- 5. What is the date range of the case_info table? (i.e. min and max dates)This question is required.*
+
+SELECT
+  MAX(C.DateRepConf) AS max_date,
+  MIN(C.DateRepConf) AS min_date
+FROM `dabc10-387511.doh_drop.case_info` C;
+
+-- 6. Which day recorded the highest number of cases?This question is required.*
+
+SELECT
+  C.DateRepConf,
+  COUNT(C.CaseCode) AS count_case
+FROM `dabc10-387511.doh_drop.case_info` C
+GROUP BY
+  C.DateRepConf
+ORDER BY
+  count_case DESC
+LIMIT 1;
+
+-- 7. How many of the cases in 2021 resulted in deaths? This question is required.*
+
+SELECT
+  EXTRACT(YEAR FROM C.DateRepConf) AS year,
+  C.HealthStatus
+FROM `dabc10-387511.doh_drop.case_info` C
+WHERE
+  C.HealthStatus = 'DIED'
+  AND DATE(C.DateRepConf) BETWEEN DATE('2021-01-01') AND DATE('2021-12-31');
+
+-- 8. Which facility and day recorded the highest turnaround time for test results?
+
+SELECT 
+  A.facility_name,
+  A.report_date,
+  A.avg_turnaround_time
+FROM 
+    `dabc10-387511.doh_drop.testing_aggregates` A
+WHERE 
+  A.avg_turnaround_time = (
+      SELECT 
+          MAX(A.avg_turnaround_time) 
+        FROM 
+            `dabc10-387511.doh_drop.testing_aggregates` A
+    );
+
+-- 9. How many doctors were admitted from July 2021 to September 2021? This question is required.
+
+SELECT
+  SUM(D.doctor_adm) AS total_doctors_admitted
+FROM `dabc10-387511.doh_drop.quarantine_data` D
+WHERE
+  DATE(D.reportdate) BETWEEN DATE('2021-07-01') AND DATE('2021-09-30');
+
+-- 10. How many seniors (age >= 60) had recorded cases in the month of September 2021?
+
+SELECT 
+  COUNT(*) AS senior_cases
+FROM `dabc10-387511.doh_drop.case_info` C
+WHERE 
+  C.Age >= 60
+  AND (DATE(C.DateRepConf) BETWEEN ('2021-09-01') AND DATE ('2021-09-30'));
+
+-- 11. What is the split of cases in terms of gender? How many cases were male? How many were female? Show the totals per month. Consider only those aged 18-60 Order results by month ascending, and then by gender (Female first). Choose the values from the first row of your output.This question is required.*
+
+SELECT 
+    DATE_TRUNC(C.DateRepConf, MONTH) AS month,
+    C.Sex,
+    COUNT(C.CaseCode) AS total_cases
+FROM 
+    `dabc10-387511.doh_drop.case_info` C
+WHERE 
+   C.Age BETWEEN 18 AND 60
+GROUP BY 
+    month,
+    C.Sex
+ORDER BY 
+    month ASC,
+    CASE 
+        WHEN C.Sex = 'FEMALE' THEN 0 
+        ELSE 1 
+    END,
+    Sex ASC
+LIMIT 1;
+
+-- 12. Which weeks between July 2021 to September 2021 had more than 7000 weekly output samples tested Cagayan Valley Medical Center Molecular Laboratory. How many rows will be your output?
+
+SELECT 
+    EXTRACT(WEEK FROM A.report_date) AS weekly_date,
+    A.facility_name,
+    SUM(A.daily_output_samples_tested) AS total_weekly_samples_tested
+FROM `dabc10-387511.doh_drop.testing_aggregates` A
+WHERE 
+    A.facility_name = 'Cagayan Valley Medical Center Molecular Laboratory'
+    AND A.report_date >= '2021-07-01' 
+    AND A.report_date <= '2021-09-30'
+GROUP BY 
+    weekly_date, 
+    A.facility_name
+HAVING 
+    total_weekly_samples_tested > 7000;
+
+-- 13. Which facility in NCR had the highest number of quarantined health staff (doctors, nurses, and others)? Consider only September 2021 data This question is required.
+
+SELECT
+  D.facilityname,
+  D.region,
+  SUM(D.qdoctor) + SUM(D.qnurse) + SUM(D.qother) AS total_quarantined_staff
+FROM
+  `dabc10-387511.doh_drop.quarantine_data` D
+WHERE
+  D.region = 'NCR'
+  AND DATE(D.reportdate) BETWEEN DATE('2021-09-01') AND DATE('2021-09-30')
+GROUP BY
+  D.facilityname,
+  D.region
+ORDER BY
+  total_quarantined_staff DESC;
+
+-- 14. Categorize age per 10 years (i.e. 1-10,11-12,...; anything above 70 = '>70'. If Age is null, label with 'No Age'), then get the monthly total cases for each category. Consider only males, and show months and age groups with more than or equal to 5000 monthly cases. Order results by latest month first, then ascending age group What’s the month value on the first row of your output?
+
+SELECT 
+  DATE_TRUNC(C.DateRepConf, MONTH) AS month,
+  CASE 
+    WHEN Age BETWEEN 1 AND 10 THEN '1-10'
+    WHEN Age BETWEEN 11 AND 20 THEN '11-20'
+    WHEN Age BETWEEN 21 AND 30 THEN '21-30'
+    WHEN Age BETWEEN 31 AND 40 THEN '31-40'
+    WHEN Age BETWEEN 41 AND 50 THEN '41-50'
+    WHEN Age BETWEEN 51 AND 60 THEN '51-60'
+    WHEN Age BETWEEN 61 AND 70 THEN '61-70'
+    ELSE '>70'
+    END AS age_group,
+    COUNT(*) AS monthly_total_cases
+FROM `dabc10-387511.doh_drop.case_info` C   
+WHERE 
+  C.Sex = 'MALE'
+GROUP BY 
+  month,
+  age_group
+HAVING 
+    COUNT(*) >= 5000
+ORDER BY 
+  month DESC,
+  age_Group ASC;
