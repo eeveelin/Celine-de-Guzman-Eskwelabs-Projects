@@ -1,1 +1,1 @@
--- These are the SQL codes that I did for my SPRINT 2 in Eskwelabs. The dataset that has been used in these codes are mostly from Department of Health (COVID-19 cases) or created by the Eskwelabs team --
+-- These are the SQL codes that I did for my bootcamp in Eskwelabs. All the datasets and questions are from Eskwelabs. 
