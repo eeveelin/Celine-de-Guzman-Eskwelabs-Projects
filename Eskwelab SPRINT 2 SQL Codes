@@ -1,0 +1,429 @@
+-- QUIZ --
+-- Which 3 dates registered the highest case increase, on a national level?
+
+SELECT 
+  N.date,
+  N.new_total_confirmed_cases
+FROM `bigquery-public-data.covid19_italy.national_trends` N
+ORDER BY
+  N.new_total_confirmed_cases DESC
+LIMIT 3;
+
+-- Which month registered the highest average current case count, on a national level?
+
+SELECT 
+  DATE_TRUNC(N.date, MONTH) AS month,
+  AVG(N.new_total_confirmed_cases) as avg_current_case
+FROM `bigquery-public-data.covid19_italy.national_trends` N
+GROUP BY
+  month
+ORDER BY
+  avg_current_case DESC
+LIMIT 1;
+
+-- Write the query that will show the count of unique provinces
+
+SELECT
+  COUNT(DISTINCT (P.province_name)) AS unique_provinces_count
+FROM `bigquery-public-data.covid19_italy.data_by_province` P;
+
+-- How many days registered a case increase of more than 10000, on a national level? 
+
+SELECT
+  COUNT(N.date) AS count_days
+FROM `bigquery-public-data.covid19_italy.national_trends` N
+WHERE
+  N.new_total_confirmed_cases > 10000;
+
+-- Write the query that will show all unique regions. Order alphabetically.
+
+SELECT DISTINCT
+  R.region_name
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+ORDER BY
+  R.region_name ASC;
+
+-- Which dates and region(s) have the highest deaths to tests ratio? Consider only August 2020 and December 2020. Limit the output to show only 5 rows. 
+
+SELECT
+  R.date,
+  R.region_name,
+  R.deaths/R.tests_performed AS deaths_to_tests_ratio
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  DATE(R.date) BETWEEN DATE('2020-08-01') AND DATE('2020-08-31')
+  OR DATE(R.date) BETWEEN DATE('2020-12-01') AND DATE('2020-12-31')
+ORDER BY
+  deaths_to_tests_ratio DESC
+LIMIT 5;
+
+-- What is the total case increase for each region, for December 2020?
+
+SELECT
+  R.date,
+  R.region_name,
+  R.new_total_confirmed_cases
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  DATE(R.date) BETWEEN DATE('2020-12-01') AND DATE('2020-12-31');
+
+-- What is the average number of new cases per month for regions 1,4,7, and 10? Show only months and regions where average new cases > 100
+
+SELECT
+  DATE_TRUNC(R.date, MONTH) as month,
+  R.region_name,
+  R.region_code,
+  AVG(R.new_total_confirmed_cases) AS avg_new_cases
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  R.region_code IN('1', '4', '7', '10')
+GROUP BY
+  month,
+  R.region_name,
+  R.region_code
+HAVING
+  avg_new_cases > 100;
+
+-- Which region registered the highest average hospitalization rate, for 2021?
+
+SELECT
+  R.date,
+  R.region_name,
+  AVG(R.total_hospitalized_patients/R.total_current_confirmed_cases) AS avg_hospital_rate
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  EXTRACT(YEAR from R.date) = 2021
+GROUP BY
+  R.date,
+  R.region_name
+ORDER BY
+  avg_hospital_rate DESC
+LIMIT 1;
+
+-- How many unique regions had a daily increase of more than 1000, on any day of a month? Consider only Feb 2021, May 2021, and August 2021. (truncate monthly, then get unique region count, with the specified filter). 
+
+SELECT
+  DATE_TRUNC(R.date, MONTH) AS month,
+  COUNT(DISTINCT R.region_name) AS unique_region_count
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  (DATE(R.date) BETWEEN DATE('2021-02-01') AND DATE('2021-02-28')
+  OR DATE(R.date) BETWEEN DATE('2021-05-01') AND DATE('2021-05-31')
+  OR DATE(R.date) BETWEEN DATE('2021-08-01') AND DATE('2021-08-31'))
+  AND R.new_total_confirmed_cases > 1000
+GROUP BY
+  month;
+
+-- WHich days registered the highest increase of current confirmed cases Consider June 2020, October 2020, December 2020, and March 2021 in Sicilia (19) and Basilicata (17) only. 
+
+SELECT
+  R.date,
+  R.region_code,
+  R.region_name,
+  R.new_current_confirmed_cases
+FROM 
+`bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  R.region_code IN ('17','19')
+  AND DATE(R.date) BETWEEN DATE('2020-06-01') AND DATE('2020-06-30')
+  OR DATE(R.date) BETWEEN DATE('2020-10-01') AND DATE('2020-10-31')
+  OR DATE(R.date) BETWEEN DATE('2020-12-01') AND DATE('2020-12-31')
+  OR DATE(R.date) BETWEEN DATE('2021-03-01') AND DATE('2021-03-31')
+ORDER BY
+  R.new_current_confirmed_cases DESC
+LIMIT 1;
+
+
+-- Which days and region had a negative increase in current confirmed cases? Consider only region names that starts with a letter 'P', and January 01-October 25 for both years 2020 and 2021 only. Sort output by date
+
+SELECT 
+  R.date,
+  R.region_name,
+  R.new_current_confirmed_cases
+FROM
+  `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  R.region_name LIKE('P%')
+  AND R.new_current_confirmed_cases < 0
+  AND DATE(R.date) BETWEEN DATE('2020-01-01') AND DATE('2020-10-25')
+  OR DATE(R.date) BETWEEN DATE ('2021-01-01') AND DATE('2021-10-25')
+ORDER BY
+  R.date ASC;
+
+
+-- Which day had the highest positivity rate in the month of December 2020, for Toscana(9)
+
+SELECT
+  R.date,
+  R.region_name,
+  R.total_confirmed_cases/R.tests_performed AS positivity_rate
+FROM 
+  `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  R.region_name = ('Toscana') 
+  AND DATE(R.date) BETWEEN DATE('2020-12-01') AND DATE('2020-12-31')
+ORDER BY
+  positivity_rate DESC
+LIMIT 1;
+
+
+--  From your answer in the previous question (i.e. using the same columns and conditions), which day and region registered the lowest case count? Adjust your query accordingly. 
+
+SELECT 
+  R.date,
+  R.region_name,
+  R.new_current_confirmed_cases
+FROM
+  `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  R.region_name LIKE('P%')
+  AND (
+  R.new_current_confirmed_cases < 0
+  AND DATE(R.date) BETWEEN DATE('2020-01-01') AND DATE('2020-10-25')
+  OR DATE(R.date) BETWEEN DATE ('2021-01-01') AND DATE('2021-10-25')
+  )
+ORDER BY
+  R.new_current_confirmed_cases ASC
+LIMIT 1;
+
+-- Show the monthly increase of cases per regions per months of July 2021 to September 2021. Sort results by region name, then by date. 
+
+SELECT 
+  R.date,
+  R.region_name,
+  SUM(R.new_current_confirmed_cases) AS monthly_increase
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  DATE(R.date) BETWEEN DATE('2021-07-01') AND DATE('2021-09-30')
+GROUP BY
+  R.date,
+  R.region_name
+ORDER BY
+  R.region_name,
+  R.date;
+
+-- From the previous question, which regions and month registered an increase of more than 10000? 
+
+SELECT 
+  R.region_name,
+  EXTRACT(MONTH from DATE(R.date)) AS month,
+  SUM(R.new_current_confirmed_cases) AS monthly_increase
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  DATE(R.date) BETWEEN DATE('2021-07-01') AND DATE('2021-09-30')
+GROUP BY
+  R.region_name,
+  month
+HAVING
+  monthly_increase > 10000
+ORDER BY
+  R.region_name,
+  month;
+
+--  Which regions have an average fatality rate of less than 5%? Consider only days where total cases > 0, and sort results from highest fatality rate to lowest. 
+
+SELECT
+  R.date,
+  R.region_name,
+  R.total_confirmed_cases,
+  AVG(R.deaths/R.total_confirmed_cases) AS fatality_rate
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  R.total_confirmed_cases > 0
+GROUP BY
+  R.date,
+  R.region_name,
+  R.total_confirmed_cases
+HAVING
+  fatality_rate < 0.05
+ORDER BY
+  fatality_rate DESC; 
+
+--  Show the total cumulative cases per day on a national level 
+
+SELECT
+  N.date,
+  N.total_confirmed_cases
+FROM `bigquery-public-data.covid19_italy.national_trends` N;
+
+-- How many distinct provinces per region are recorded? Show the code, name, and abbreviation per province as well as the region name
+
+SELECT DISTINCT
+  P.province_name,
+  P.province_code,
+  P.province_abbreviation,
+  P.region_code
+FROM `bigquery-public-data.covid19_italy.data_by_province` P;
+
+-- Show the increase in current cases per day in region code = 6.
+
+SELECT
+  R.date,
+  R.region_code,
+  R.new_current_confirmed_cases
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  R.region_code = '6';
+
+-- . Which region and days  recorded more than 10000 in current hospitalized patients? Show the split between hospitalized with symptoms and hospitalized in intensive care 
+
+SELECT
+  R.date,
+  R.region_name,
+  R.total_hospitalized_patients,
+  R,hospitalized_patients_symptoms,
+  R.hospitalized_patients_intensive_care
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  R.total_hospitalized_patients > 10000
+ORDER BY
+  R.date,
+  R.region_name;
+
+-- Show the positivity rate and fatality rate for each day, on a national level. Take note that positivity rate = total cases/total performed, while  fatality rate = total deaths/total cases 
+SELECT
+  N.date,
+  N.total_confirmed_cases/N.tests_performed AS positivity_rate,
+  N.deaths/N.total_confirmed_cases AS fatality_rate
+FROM 
+  `bigquery-public-data.covid19_italy.national_trends` N;
+
+-- Which region and days recorded more than 10000 in current hospitalized patients? Show the split between hospitalized with symptoms and hospitalized in intensive care 
+SELECT
+  R.region_name,
+  R.date,
+  R.total_hospitalized_patients,
+  R.hospitalized_patients_symptoms,
+  R.hospitalized_patients_intensive_care
+FROM 
+  `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+   R.total_hospitalized_patients > 10000
+ORDER BY
+  R.date, R.region_name;
+
+-- What is the hospitalization rate on a national level, for December 25, 2020? Note the ff: Hospitalization rate = total current hospitalized/total current cases. To filter by date, you have to convert the date column into a date. It’s currently a timestamp. To do that, just add the function DATE(). For ex: Date(date) will return just the date (without the time) of the date column  
+SELECT
+  N.date,
+  N.total_hospitalized_patients/N.total_current_confirmed_cases AS hospitalization_rate
+FROM 
+  `bigquery-public-data.covid19_italy.national_trends` N
+WHERE
+  DATE(N.date) = DATE('2020-12-25');
+
+-- Which day had the highest positivity rate in the month of December 2020, for Toscana (9)
+SELECT
+  R.date,
+  R.region_name,
+  R.total_confirmed_cases/R.tests_performed AS positivity_rate
+FROM 
+  `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  R.region_name = ('Toscana') 
+  AND DATE(R.date) BETWEEN DATE('2020-12-01') AND DATE('2020-12-31')
+ORDER BY
+  positivity_rate DESC
+LIMIT 1;
+
+-- Which days registered the highest increase of current confirmed cases Consider  June 2020, October 2020, December 2020, and March 2021, in Sicilia (19) and Basilicata (17) only.
+SELECT
+  R.date,
+  R.region_code,
+  R.region_name,
+  R.new_current_confirmed_cases
+FROM 
+    `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  R.region_code IN ('17','19')
+  AND (
+    DATE(R.date) BETWEEN DATE('2020-06-01') AND DATE('2020-06-30')
+    OR DATE(R.date) BETWEEN DATE('2020-10-01') AND DATE('2020-10-31')
+    OR DATE(R.date) BETWEEN DATE('2020-12-01') AND DATE('2020-12-31')
+    OR DATE(R.date) BETWEEN DATE('2021-03-01') AND DATE('2021-03-31')
+  )
+ORDER BY
+    R.new_current_confirmed_cases DESC
+LIMIT 1;
+
+-- Which days and regions had a negative increase in current confirmed cases? Consider only region names that start with the letter ‘P’, and January 01 – October 25 for both years 2020 and 2021 only. Sort output by date 
+SELECT 
+  R.date,
+  R.region_name,
+  R.new_current_confirmed_cases
+FROM
+  `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  R.region_name LIKE('P%')
+  AND R.new_current_confirmed_cases < 0
+  AND DATE(R.date) BETWEEN DATE('2020-01-01') AND DATE('2020-10-25')
+  OR DATE(R.date) BETWEEN DATE ('2021-01-01') AND DATE('2021-10-25')
+ORDER BY
+  R.date ASC;
+
+-- . From your answer in the previous question (i.e. using the same columns and conditions), which day and region registered the lowest case count? Adjust your query accordingly. 
+SELECT 
+  R.date,
+  R.region_name,
+  R.new_current_confirmed_cases
+FROM
+  `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  R.region_name LIKE('P%')
+  AND (
+  R.new_current_confirmed_cases < 0
+  AND DATE(R.date) BETWEEN DATE('2020-01-01') AND DATE('2020-10-25')
+  OR DATE(R.date) BETWEEN DATE ('2021-01-01') AND DATE('2021-10-25')
+  )
+ORDER BY
+  R.new_current_confirmed_cases ASC
+LIMIT 1;
+
+-- Show the monthly increase of cases per regions per months of July 2021 to September 2021. Sort results by region name, then by date. 
+SELECT 
+  R.date,
+  R.region_name,
+  SUM(R.new_current_confirmed_cases) AS monthly_increase
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  DATE(R.date) BETWEEN DATE('2021-09-30') AND DATE('2021-07-31')
+GROUP BY
+  R.date,
+  R.region_name
+ORDER BY
+  R.region_name,
+  R.date;
+
+-- . From the previous question, which regions and month registered an increase of more than 10000? 
+SELECT 
+  R.region_name,
+  EXTRACT(MONTH from DATE(R.date)) AS month,
+  SUM(R.new_current_confirmed_cases) AS monthly_increase
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  DATE(R.date) BETWEEN DATE('2021-07-01') AND DATE('2021-09-30')
+GROUP BY
+  R.region_name,
+  month
+HAVING
+  monthly_increase > 10000
+ORDER BY
+  R.region_name,
+  month;
+
+-- Which regions have an average fatality rate of less than 5%? Consider only days where total cases > 0, and sort results from highest fatality rate to lowest. 
+SELECT
+  R.date,
+  R.region_name,
+  R.total_confirmed_cases,
+  AVG(R.deaths/R.total_confirmed_cases) AS avg_fatality_rate
+FROM `bigquery-public-data.covid19_italy.data_by_region` R
+WHERE
+  R.total_confirmed_cases > 0
+GROUP BY
+  R.date,
+  R.region_name,
+  R.total_confirmed_cases
+HAVING
+  fatality_rate < 0.05
+ORDER BY
+  fatality_rate DESC; 
